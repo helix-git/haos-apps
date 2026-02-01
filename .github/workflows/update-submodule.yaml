@@ -1,10 +1,17 @@
 ---
-name: Update Submodule
+name: Update Submodules
 
 "on":
-  repository_dispatch:
-    types:
-      - submodule-update
+  workflow_dispatch:
+    inputs:
+      submodule:
+        description: "Submodule to update"
+        required: true
+        type: choice
+        options:
+          - all
+          - example-addon
+          - octodns-gui
 
 permissions:
   contents: write
@@ -12,35 +19,42 @@ permissions:
 
 jobs:
   update:
-    name: Update ${{ github.event.client_payload.submodule }}
+    name: Update submodules
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
           submodules: true
-          token: ${{ secrets.PAT_TOKEN }}
 
-      - name: Update submodule
+      - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          cd ${{ github.event.client_payload.submodule }}
+
+      - name: Update selected submodule
+        if: inputs.submodule != 'all'
+        run: |
+          cd ${{ inputs.submodule }}
           git fetch origin
-          git checkout ${{ github.event.client_payload.sha }}
+          git checkout origin/main
           cd ..
-          git add ${{ github.event.client_payload.submodule }}
+          git add ${{ inputs.submodule }}
+
+      - name: Update all submodules
+        if: inputs.submodule == 'all'
+        run: |
+          git submodule update --remote
+          git add .
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.PAT_TOKEN }}
-          commit-message: "chore: Update ${{ github.event.client_payload.submodule }} submodule"
-          title: "Update ${{ github.event.client_payload.submodule }} submodule"
+          commit-message: "chore: Update ${{ inputs.submodule }} submodule(s)"
+          title: "Update ${{ inputs.submodule }} submodule(s)"
           body: |
-            Automated submodule update triggered by successful build.
+            Automated submodule update.
 
-            Submodule: `${{ github.event.client_payload.submodule }}`
-            Commit: `${{ github.event.client_payload.sha }}`
-          branch: update-${{ github.event.client_payload.submodule }}
+            Updated: `${{ inputs.submodule }}`
+          branch: update-submodules
           delete-branch: true
