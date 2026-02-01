@@ -1,5 +1,68 @@
---${{ matrix.arch }} \
-            --target /data/${{ matrix.addon }} \
-            --image "{arch}-${{ matrix.addon }}" \
+---
+name: Build
+
+"on":
+  workflow_dispatch:
+    inputs:
+      addon:
+        description: "Add-on to build (folder name)"
+        required: true
+        type: choice
+        options:
+          - example-addon
+          - octodns-gui
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build ${{ github.event.inputs.addon }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - aarch64
+          - amd64
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v6.0.2
+        with:
+          submodules: true
+
+      # home-assistant/actions hat keine Releases, daher Commit-SHA pinning
+      - name: Get add-on information
+        id: info
+        uses: home-assistant/actions/helpers/info@55b4a5d23e09d627c2773c2ef82afa98904d65b4
+        with:
+          path: "./${{ github.event.inputs.addon }}"
+
+      - name: Check if architecture exists
+        id: check
+        run: |
+          if [[ "${{ steps.info.outputs.architectures }}" =~ \
+            "${{ matrix.arch }}" ]]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Login to GitHub Container Registry
+        if: steps.check.outputs.build == 'true'
+        uses: docker/login-action@v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build add-on
+        if: steps.check.outputs.build == 'true'
+        uses: home-assistant/builder@2025.11.0
+        with:
+          args: |
+            --${{ matrix.arch }} \
+            --target /data/${{ github.event.inputs.addon }} \
+            --image "{arch}-${{ github.event.inputs.addon }}" \
             --docker-hub "ghcr.io/${{ github.repository_owner }}" \
             --addon
