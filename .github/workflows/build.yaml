@@ -63,6 +63,6 @@ jobs:
           args: |
             --${{ matrix.arch }} \
             --target /data/${{ github.event.inputs.addon }} \
-            --image "{arch}-${{ github.event.inputs.addon }}" \
+            --image "ha-${{ github.event.inputs.addon }}/{arch}" \
             --docker-hub "ghcr.io/${{ github.repository_owner }}" \
             --addon
