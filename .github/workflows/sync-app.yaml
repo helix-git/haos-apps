@@ -41,9 +41,12 @@ jobs:
           if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
             echo "app=${{ github.event.client_payload.app }}" >> $GITHUB_OUTPUT
             echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+            BRANCH="${{ github.event.client_payload.branch }}"
+            echo "branch=${BRANCH:-main}" >> $GITHUB_OUTPUT
           else
             echo "app=${{ inputs.app }}" >> $GITHUB_OUTPUT
             echo "version=latest" >> $GITHUB_OUTPUT
+            echo "branch=main" >> $GITHUB_OUTPUT
           fi
 
       - name: Update specific submodule
@@ -51,7 +54,7 @@ jobs:
         run: |
           cd ${{ steps.app.outputs.app }}
           git fetch origin
-          git checkout origin/main
+          git checkout origin/${{ steps.app.outputs.branch }}
           cd ..
           git add ${{ steps.app.outputs.app }}
 
