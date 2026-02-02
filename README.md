@@ -17,4 +17,4 @@ Klicke auf den Badge oben oder:
 | App | Version | Beschreibung |
 |-----|---------|--------------|
 | Example Add-on | 0.2.0 | Ein Beispiel-Add-on als Vorlage für eigene Entwicklungen |
-| OctoDNS GUI | 0.1.0 | Web-basierte GUI zur Verwaltung von DNS-Zonen mit OctoDNS |
+| OctoDNS GUI | 0.1.3 | Web-basierte GUI zur Verwaltung von DNS-Zonen mit OctoDNS |
