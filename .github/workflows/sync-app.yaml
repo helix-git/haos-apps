@@ -1,0 +1,106 @@
+---
+name: Sync App
+
+"on":
+  repository_dispatch:
+    types:
+      - app-updated
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "App to sync"
+        required: true
+        type: choice
+        options:
+          - all
+          - octodns-gui
+          - example-addon
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync Submodule
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine app to sync
+        id: app
+        run: |
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "app=${{ github.event.client_payload.app }}" >> $GITHUB_OUTPUT
+            echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "app=${{ inputs.app }}" >> $GITHUB_OUTPUT
+            echo "version=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update specific submodule
+        if: steps.app.outputs.app != 'all'
+        run: |
+          cd ${{ steps.app.outputs.app }}
+          git fetch origin
+          git checkout origin/main
+          cd ..
+          git add ${{ steps.app.outputs.app }}
+
+      - name: Update all submodules
+        if: steps.app.outputs.app == 'all'
+        run: |
+          git submodule update --remote
+          git add .
+
+      - name: Update README
+        run: |
+          cat > README.md << 'EOF'
+          # Home Assistant Apps
+
+          [![Add Repository](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fhelix-git%2Fhaos-apps)
+
+          Eine Sammlung von Home Assistant Add-ons (Apps).
+
+          ## Installation
+
+          Klicke auf den Badge oben oder:
+
+          1. In Home Assistant zu **Einstellungen** → **Add-ons** → **Add-on Store** gehen
+          2. Oben rechts auf ⋮ klicken → **Repositories**
+          3. Diese URL hinzufügen: `https://github.com/helix-git/haos-apps`
+
+          ## Verfügbare Apps
+
+          | App | Version | Beschreibung |
+          |-----|---------|--------------|
+          EOF
+
+          for dir in */; do
+            if [[ -f "${dir}config.yaml" ]]; then
+              name=$(grep '^name:' "${dir}config.yaml" | sed 's/name: *"\?\([^"]*\)"\?/\1/')
+              # Version ohne Kommentar extrahieren
+              version=$(grep '^version:' "${dir}config.yaml" | sed 's/version: *"\?\([^"#]*\)"\?.*/\1/' | xargs)
+              desc=$(grep '^description:' "${dir}config.yaml" | sed 's/description: *"\?\([^"]*\)"\?/\1/')
+              echo "| ${name} | ${version} | ${desc} |" >> README.md
+            fi
+          done
+
+          git add README.md
+
+      - name: Commit and push
+        run: |
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: Sync ${{ steps.app.outputs.app }} to ${{ steps.app.outputs.version }}"
+            git push
+          fi

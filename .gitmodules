@@ -1,0 +1,6 @@
+[submodule "octodns-gui"]
+	path = octodns-gui
+	url = https://github.com/helix-git/ha-octodns-gui.git
+[submodule "example-addon"]
+	path = example-addon
+	url = https://github.com/helix-git/ha-example-addon.git
