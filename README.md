@@ -17,4 +17,5 @@ Klicke auf den Badge oben oder:
 | App | Version | Beschreibung |
 |-----|---------|--------------|
 | Example Add-on | 0.2.0 | Ein Beispiel-Add-on als Vorlage für eigene Entwicklungen |
+| Audiobookshelf | 1.0.0 | Self-hosted audiobook and podcast server |
 | OctoDNS GUI | 0.4.0 | Web-basierte GUI zur Verwaltung von DNS-Zonen mit OctoDNS |
