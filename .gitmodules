@@ -4,3 +4,6 @@
 [submodule "octodns-gui"]
 	path = octodns-gui
 	url = https://github.com/helix-git/haos-octodns-gui.git
+[submodule "haos-abs"]
+	path = haos-abs
+	url = https://github.com/helix-git/haos-abs.git
